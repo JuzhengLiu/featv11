@@ -1,0 +1,73 @@
+# model
+model: 
+  name: AutoEnc_MoE
+  out_dim: 1280
+  vec_dim: 2560           # 保持升维
+  num_steps: 1
+  norm: true
+  normvec: true
+  identify: false
+  query_num: 700
+  
+  # === MoE Config ===
+  num_experts: 4          # 4个专家足够做"修补"工作
+  top_k: 2                # 软选择，允许叠加修正
+  noisy_gating: false
+  dropout: 0.2            # 适度正则化
+  
+  residul: false          # 全局残差关闭 (使用内部并行架构)
+
+# data reader
+workers: 4
+
+# training
+train:
+  dataset: U1652_Random_drone
+  data_path: /home/dell/data/jzl/0-pipei-dinov3
+  dro_num: 1
+  feat: feats/dinov3_vith16plus/28
+  loss: 
+    - CycleAELoss
+  loss_w:
+    - 1
+  
+  lambda_A: 1.
+  lambda_B: 1.
+  idt_w: 1.0             # 标准权重
+  feat_w: 0.001
+  
+  lambda_moe: 0.01
+
+  label_smoothing: 0.15
+  epochs: 300            # 保持 300
+  save_epoch: 30
+  eval_epoch: 30
+  batch_size: 701
+  
+  # === 训练参数 ===
+  lr: 0.0002             # 2e-4: 适合训练共享线性层
+  warm_epochs: 1
+  optim: AdamW
+  scheduler: cosine
+  #scheduler: constant
+  custom_sampling: false
+  decay_exclue_bias: false
+  clip_grad: 100.
+  mixed_precision: false
+  remove_junk: false
+  
+  pseudo_thr: 0.2        # 初始低门槛，先学大方向
+  
+  split: 1
+  mutual_match: True
+  keep_neg: True
+
+eval:
+  dataset: Feat_Single
+  data_path: /home/dell/data/jzl/0-pipei-dinov3
+  feat: feats_test/dinov3_vith16plus/28
+  batch_size: 256
+  output: feat
+  pos_eval: false
+  refine: false
+  remove_junk: true
